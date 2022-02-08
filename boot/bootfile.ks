@@ -34,4 +34,6 @@ if Career():CANDOACTIONS {
     core:doaction("open terminal", true).
 }
 
+core:doaction("open terminal", true).
+
 switch to 0.

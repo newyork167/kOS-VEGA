@@ -6,6 +6,15 @@ runOncePath("../library/lib_manoeuvre.ks").
 runOncePath("../library/lib_navigation.ks").
 runOncePath("../library/lib_utilities.ks").
 
+function shouldBreak {
+    if terminal:input:haschar() {
+        if terminal:input:getchar() = terminal:input:backspace {
+            return true.
+        }
+    }
+    return false.
+}
+
 function have_empty_tanks {
     local stage_parts is ship:partstagged("stage on empty").
     local result is false.
@@ -73,11 +82,18 @@ function pitchProgram2 {
 
     until ship:apoapsis > altParameter {
         lock steering to heading(launch_params["target_heading"]:call(), 90-(ship:apoapsis/1000), 0).
+        if shouldBreak() {
+            break.
+        }
     }
 
     // local throttle_pid is PIDLoop(0.05, 0, 0.01, 0, 1).
     // set throttle_pid:setpoint to 120.
     // until ship:velocity:orbit:mag > velParameter - 1000 {
+    //     if shouldBreak() {
+    //         break.
+    //     }
+
     //     set twrScale to throttle_pid:update(time:seconds, eta:apoapsis).
     //     wait 0.
     // }
@@ -86,6 +102,9 @@ function pitchProgram2 {
         local throttlePID is pidLoop(0.0001, 0, 0.00001, 0.001, 1).
         until ship:altitude > body:atm:height - 500 {
             set twrScale to throttlePID:update(time:seconds, ship:apoapsis - altParameter).
+            if shouldBreak() {
+                break.
+            }
             wait 0.
         }
     }
@@ -159,7 +178,16 @@ function pitchProgram {
 
 function atmosphereExit {
     lock steering to lookdirup(surfaceTangent(), localVertical()).
-    wait until ship:altitude > body:atm:height.
+    // wait until ship:altitude > body:atm:height.
+    until ship:altitude > body:atm:height {
+        clearScreen.
+        print "Current Ship Altitude: " + ship:altitude AT (0, 23).
+        print "Body Atmos Altitude: " + body:atm:height AT (0, 20).
+        if shouldBreak() {
+            break.
+        }
+        wait(0).
+    }.
     local discard_parts is ship:partstagged("discard").
     until discard_parts:length = 0 {
         stage.
@@ -325,7 +353,7 @@ function launch {
     parameter turnStartSpeed is 60.
     parameter steepness is 0.5.
     parameter maintainTWR is 0.
-    parameter nominalTWR is 1.17.
+    parameter nominalTWR is 1.16.
     
     local launch_params is lexicon(
         "target_altitude", targetAltitude,
@@ -419,6 +447,9 @@ function launch {
         until twr >= nominalTWR {
             set twr to getShipTWR().
             print "Current TWR: " + twr.
+            if shouldBreak() {
+                break.
+            }
             wait 0.
         }
 
